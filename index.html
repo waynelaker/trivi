@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Triangle Path Game</title>
+  <style>
+    canvas {
+      display: block;
+      margin: auto;
+      background: white;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+<canvas id="game" width="600" height="600"></canvas>
+<script>
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+
+  const SIDE = 100;
+  const HEIGHT = SIDE * Math.sqrt(3) / 2;
+
+  class Triangle {
+    constructor(id, cx, cy, pointingUp = true) {
+      this.id = id;
+      this.cx = cx;
+      this.cy = pointingUp ? cy : cy - HEIGHT / 3;
+      this.rotation = 0;
+      this.pointingUp = pointingUp;
+      this.fixed = (id==0) || id == ((NUMROWS-1)*(NUMROWS-1)) || id == ((NUMROWS*NUMROWS)-1) ? true : false ;
+    }
+
+    draw(ctx) {
+      ctx.save();
+      ctx.translate(this.cx, this.cy);
+      ctx.rotate(this.rotation);
+
+      ctx.fillStyle = "red";
+      ctx.fillRect(-2, -2, 4, 4); 
+
+      const h = HEIGHT;
+      const tipY = this.pointingUp ? -2 * h / 3 : 2 * h / 3;
+      const baseY = this.pointingUp ? h / 3 : -h / 3;
+
+      ctx.beginPath();
+      ctx.moveTo(0, tipY);
+      ctx.lineTo(-SIDE / 2, baseY);
+      ctx.lineTo(SIDE / 2, baseY);
+      ctx.closePath();
+      
+      if (this.fixed) {
+        ctx.fillStyle = "gray";
+        ctx.fill();        
+      }
+     
+      ctx.stroke();
+
+      // curved path
+      if (!this.fixed) {
+        ctx.beginPath();
+        ctx.strokeStyle = "blue";
+        ctx.lineWidth = 3;
+        if (this.pointingUp) {
+          ctx.arc(0, -HEIGHT*2/3, SIDE/2, Math.PI * 1/3, Math.PI * 2/3);
+        }
+        else {
+          ctx.arc(0, HEIGHT*2/3, SIDE/2, Math.PI * 4/3, Math.PI * 5/3);
+        }
+
+      }     
+      ctx.stroke();
+      ctx.restore();
+    }
+
+
+    contains(x, y) {
+      const dx = x - this.cx;
+      const dy = y - this.cy;
+      return dx * dx + dy * dy < SIDE/3 * SIDE/3;
+    }
+
+    rotate() {
+      if (!this.fixed) {
+        this.rotation += Math.PI * 2 / 3;
+      }
+    }
+  }
+
+
+  function generateLayout(rows) {
+    const layout = [];
+    for (let r = 0; r < rows; r++) {
+      const row = [];
+      for (let dx = -r; dx <= r; dx++) {
+        row.push(dx);
+      }
+      layout.push(row);
+    }
+    return layout;
+  }
+
+
+  const triangles = [];
+  const startX = canvas.width / 2;
+  const startY = 200;
+  let id = 0;
+
+  const NUMROWS = 4;
+
+  const layout = generateLayout(NUMROWS);
+
+  // const layout = [
+  //   [0],
+  //   [-1, 0, 1],
+  //   [-2,-1, 0, 1, 2],
+  //   [-3,-2,-1, 0, 1, 2, 3],
+  //     // [-4,-3,-2,-1, 0, 1, 2, 3, 4],
+  //   // [-5,-4,-3,-2,-1, 0, 1, 2, 3, 5]
+  // ];
+
+
+
+  // dynamically generate array based on num rows
+  
+
+  layout.forEach((row, rowIndex) => {
+    const y = startY + rowIndex * HEIGHT;
+    row.forEach((dx, i) => {
+      const x = startX + dx * SIDE * 0.5;
+      //const isCorner = (rowIndex === 0 && i === 0) || (rowIndex === 4 && (i === 0 || i === 4));
+      //const isCorner = (rowIndex === 0 && i === 0) || (rowIndex === 4 && (i === 0 || i === 4));      
+      const pointingUp = (rowIndex + dx) % 2 === 0;
+      triangles.push(new Triangle(id++, x, y, pointingUp));
+    });
+  });
+
+  function drawAll() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);   
+    triangles.forEach(tri => tri.draw(ctx));
+  }
+
+  canvas.addEventListener("click", e => {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    for (const tri of triangles) {
+      if (tri.contains(x, y)) {
+        tri.rotate();
+        drawAll();
+        break;
+      }
+    }
+  });
+
+  drawAll();
+</script>
+</body>
+</html>
