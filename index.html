@@ -18,7 +18,8 @@
   const canvas = document.getElementById("game");
   const ctx = canvas.getContext("2d");
 
-  const SIDE = 100;
+  const NUMROWS = 4;
+  const SIDE = 120;
   const HEIGHT = SIDE * Math.sqrt(3) / 2;
 
   class Triangle {
@@ -103,15 +104,13 @@
 
   const triangles = [];
   const startX = canvas.width / 2;
-  const startY = 200;
+  const startY = 100;
   let id = 0;
-
-  const NUMROWS = 4;
 
   const layout = generateLayout(NUMROWS);
 
   // dynamically generate array based on num rows
-  
+
   // like this
   // const layout = [
     //   [0],
