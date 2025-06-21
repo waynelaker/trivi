@@ -110,26 +110,21 @@
 
   const layout = generateLayout(NUMROWS);
 
-  // const layout = [
-  //   [0],
-  //   [-1, 0, 1],
-  //   [-2,-1, 0, 1, 2],
-  //   [-3,-2,-1, 0, 1, 2, 3],
-  //     // [-4,-3,-2,-1, 0, 1, 2, 3, 4],
-  //   // [-5,-4,-3,-2,-1, 0, 1, 2, 3, 5]
-  // ];
-
-
-
   // dynamically generate array based on num rows
   
+  // like this
+  // const layout = [
+    //   [0],
+    //   [-1, 0, 1],
+    //   [-2,-1, 0, 1, 2],
+    //   [-3,-2,-1, 0, 1, 2, 3],
+    // ...
+    // ];
 
   layout.forEach((row, rowIndex) => {
     const y = startY + rowIndex * HEIGHT;
     row.forEach((dx, i) => {
       const x = startX + dx * SIDE * 0.5;
-      //const isCorner = (rowIndex === 0 && i === 0) || (rowIndex === 4 && (i === 0 || i === 4));
-      //const isCorner = (rowIndex === 0 && i === 0) || (rowIndex === 4 && (i === 0 || i === 4));      
       const pointingUp = (rowIndex + dx) % 2 === 0;
       triangles.push(new Triangle(id++, x, y, pointingUp));
     });
