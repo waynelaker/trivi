@@ -37,8 +37,9 @@
       ctx.translate(this.cx, this.cy);
       ctx.rotate(this.rotation);
 
-      ctx.fillStyle = "red";
-      ctx.fillRect(-2, -2, 4, 4); 
+      // debug centre point of triangle
+      //ctx.fillStyle = "red";
+      //ctx.fillRect(-2, -2, 4, 4); 
 
       const h = HEIGHT;
       const tipY = this.pointingUp ? -2 * h / 3 : 2 * h / 3;
