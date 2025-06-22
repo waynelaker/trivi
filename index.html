@@ -4,11 +4,20 @@
   <meta charset="UTF-8">
   <title>Triangle Path Game</title>
   <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      touch-action: none;
+    }
+
     canvas {
       display: block;
-      margin: auto;
-      background: white;
-      border: 1px solid #ccc;
+      width: 100vw;
+      height: 100vw;     /* Make square */
+      max-height: 100vh; /* Prevent overflow */
+      touch-action: none;
     }
   </style>
 </head>
@@ -18,10 +27,9 @@
   const canvas = document.getElementById("game");
   const ctx = canvas.getContext("2d");
 
-  const NUMROWS = 5;
-
-  if (NUMROWS < 3 || NUMROWS > 5 )
-    throw new Error("There can only be 3, 4 or 5 rows");
+  const NUMROWS = 4;
+  if (NUMROWS < 4 || NUMROWS > 5 )
+    throw new Error("There can only be 4 or 5 rows");
 
   const SIDE = canvas.width / NUMROWS;
   const HEIGHT = SIDE * Math.sqrt(3) / 2;
@@ -212,7 +220,32 @@
     }
   });
 
-  drawAll();
+  function resizeCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+
+    // Make it a square using the smaller of width or height
+    const cssSize = Math.min(window.innerWidth, window.innerHeight);
+
+    // Set CSS display size
+    canvas.style.width = `${cssSize}px`;
+    canvas.style.height = `${cssSize}px`;
+
+    // Set internal pixel buffer size
+    canvas.width = cssSize * dpr;
+    canvas.height = cssSize * dpr;
+
+    // Set transform so 1 unit in code = 1 CSS pixel
+    ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset
+    ctx.scale(dpr, dpr);                // Scale drawing to match pixels
+
+    drawAll(); // Your function to re-render triangles
+  }
+
+  window.addEventListener("resize", resizeCanvas);
+  
+  resizeCanvas();
+
+  //drawAll();
 </script>
 </body>
 </html>
