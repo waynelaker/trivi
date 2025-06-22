@@ -22,17 +22,12 @@
   </style>
 </head>
 <body>
-<canvas id="game" width="600" height="600"></canvas>
+<canvas id="game"></canvas>
 <script>
+
   const canvas = document.getElementById("game");
   const ctx = canvas.getContext("2d");
-
-  const NUMROWS = 4;
-  if (NUMROWS < 4 || NUMROWS > 5 )
-    throw new Error("There can only be 4 or 5 rows");
-
-  const SIDE = canvas.width / NUMROWS;
-  const HEIGHT = SIDE * Math.sqrt(3) / 2;
+  const debugging = false; 
 
   class Triangle {
     constructor(id, cx, cy, pointingUp = true) {
@@ -56,10 +51,12 @@
 
       ctx.strokeStyle = "blue";
 
-      // debug centre point of triangle
-      //ctx.fillStyle = "red";
-      //ctx.fillRect(-2, -2, 4, 4); 
-
+      if (debugging) {
+        // debug centre point of triangle
+        ctx.fillStyle = "red";
+        ctx.fillRect(-2, -2, 4, 4); 
+      }
+      
       const h = HEIGHT;
       const tipY = this.pointingUp ? -2 * h / 3 : 2 * h / 3;
       const baseY = this.pointingUp ? h / 3 : -h / 3;
@@ -93,12 +90,14 @@
       ctx.stroke();
       ctx.restore();
 
-      // Green debug circle for triangle click area
-      // ctx.beginPath();
-      // ctx.arc(this.cx, this.cy, SIDE * 0.28, 0, Math.PI * 2);
-      // ctx.strokeStyle = "green";
-      // ctx.lineWidth =0.51;
-      // ctx.stroke();      
+      if (debugging) {
+        // Green debug circle for triangle click area
+        ctx.beginPath();
+        ctx.arc(this.cx, this.cy, SIDE * 0.28, 0, Math.PI * 2);
+        ctx.strokeStyle = "green";
+        ctx.lineWidth =0.51;
+        ctx.stroke();      
+      }
     }
 
 
@@ -135,45 +134,6 @@
     return layout;
   }
 
-  const triangles = [];
-  const startX = canvas.width / 2;
-  const startY = 100;   //todo: make this dynamic
-  let id = 0;
-
-  const layout = generateLayout(NUMROWS);
-
-  layout.forEach((row, rowIndex) => {
-    const y = startY + rowIndex * HEIGHT;
-    row.forEach((dx, i) => {
-      const x = startX + dx * SIDE * 0.5;
-      const pointingUp = (rowIndex + dx) % 2 === 0;
-      triangles.push(new Triangle(id++, x, y, pointingUp));
-    });
-  });
-
-
-  // lookup table of triangles that belong to a hex (up to 5 rows)
-  const hextris = [
-    [1, 2, 3, 7, 6, 5],
-    [4, 5, 6, 12, 11, 10],
-    [6, 7, 8, 14, 13, 12],
-    [9, 10, 11, 19, 18, 17],
-    [11, 12, 13, 21, 20, 19],
-    [13, 14, 15, 23, 22, 21]
-  ]
-
-  const hexes = [];
-
-  for (let r = 0; r < layout.length - 1; r++) {
-    const row = layout[r];
-    for (let i = 1; i < row.length - 1; i+=2) {
-      const dx = row[i];
-      const x = startX + dx * SIDE * 0.5;
-      const y = startY + r * HEIGHT + HEIGHT / 2 - HEIGHT / 6;
-      hexes.push({tris: hextris[hexes.length], x, y, row: r, dx });
-    }
-  }
-
   function rotateHexAtGrid(hex) {
     let first = triangles[hex.tris[0]].rotation;
     for (let i=0; i<hex.tris.length-1; i++) {
@@ -186,14 +146,16 @@
     ctx.clearRect(0, 0, canvas.width, canvas.height);   
     triangles.forEach(tri => tri.draw(ctx));
 
-    // Red debug circle for hex click zone
-    // hexes.forEach(hex => {
-    //   ctx.beginPath();
-    //   ctx.arc(hex.x, hex.y, SIDE * 0.3, 0, Math.PI * 2);
-    //   ctx.strokeStyle = "red";
-    //   ctx.lineWidth = 0.5;
-    //   ctx.stroke();
-    // });    
+    if (debugging) {
+      // Red debug circle for hex click zone
+      hexes.forEach(hex => {
+        ctx.beginPath();
+        ctx.arc(hex.x, hex.y, SIDE * 0.3, 0, Math.PI * 2);
+        ctx.strokeStyle = "red";
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      }); 
+    }   
   }
 
   canvas.addEventListener("click", e => {
@@ -220,7 +182,7 @@
     }
   });
 
-  function resizeCanvas() {
+  function initCanvas() {   
     const dpr = window.devicePixelRatio || 1;
 
     // Make it a square using the smaller of width or height
@@ -229,23 +191,72 @@
     // Set CSS display size
     canvas.style.width = `${cssSize}px`;
     canvas.style.height = `${cssSize}px`;
-
+   
     // Set internal pixel buffer size
     canvas.width = cssSize * dpr;
     canvas.height = cssSize * dpr;
 
+    console.log("dpr:", dpr);
+    console.log("cssSize:", cssSize);
+    console.log("canvas.style.width:", canvas.style.width);
+    console.log("canvas.style.height:", canvas.style.height);
+    console.log("canvas.width:", canvas.width);
+    console.log("canvas.height:", canvas.height);  
+
     // Set transform so 1 unit in code = 1 CSS pixel
     ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset
     ctx.scale(dpr, dpr);                // Scale drawing to match pixels
-
-    drawAll(); // Your function to re-render triangles
   }
 
-  window.addEventListener("resize", resizeCanvas);
-  
-  resizeCanvas();
+  initCanvas();
 
-  //drawAll();
+  const NUMROWS = 4;
+  if (NUMROWS < 4 || NUMROWS > 5 )
+    throw new Error("There can only be 4 or 5 rows");
+
+  const SIDE = canvas.width / NUMROWS;
+  const HEIGHT = SIDE * Math.sqrt(3) / 2;
+
+  const triangles = [];
+  const startX = canvas.width / 2;
+  const startY = 2*HEIGHT/3;
+  let id = 0;
+
+  const layout = generateLayout(NUMROWS);
+
+  layout.forEach((row, rowIndex) => {
+    const y = startY + rowIndex * HEIGHT;
+    row.forEach((dx, i) => {
+      const x = startX + dx * SIDE * 0.5;
+      const pointingUp = (rowIndex + dx) % 2 === 0;
+      triangles.push(new Triangle(id++, x, y, pointingUp));
+    });
+  });
+
+  // lookup table of triangles that belong to a hex (up to 5 rows)
+  const hextris = [
+    [1, 2, 3, 7, 6, 5],
+    [4, 5, 6, 12, 11, 10],
+    [6, 7, 8, 14, 13, 12],
+    [9, 10, 11, 19, 18, 17],
+    [11, 12, 13, 21, 20, 19],
+    [13, 14, 15, 23, 22, 21]
+  ]
+
+  const hexes = [];
+
+  for (let r = 0; r < layout.length - 1; r++) {
+    const row = layout[r];
+    for (let i = 1; i < row.length - 1; i+=2) {
+      const dx = row[i];
+      const x = startX + dx * SIDE * 0.5;
+      const y = startY + r * HEIGHT + HEIGHT / 2 - HEIGHT / 6;
+      hexes.push({tris: hextris[hexes.length], x, y, row: r, dx });
+    }
+  }
+
+  drawAll();
+  
 </script>
 </body>
 </html>
