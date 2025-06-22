@@ -19,7 +19,11 @@
   const ctx = canvas.getContext("2d");
 
   const NUMROWS = 4;
-  const SIDE = 120;
+
+  if (NUMROWS < 3 || NUMROWS > 5 )
+    throw new Error("There can only be 3, 4 or 5 rows");
+
+  const SIDE = canvas.width / NUMROWS;
   const HEIGHT = SIDE * Math.sqrt(3) / 2;
 
   class Triangle {
@@ -28,6 +32,11 @@
       this.cx = cx;
       this.cy = pointingUp ? cy : cy - HEIGHT / 3;
       this.rotation = 0;
+
+      // randomly rotate 0, 1 or 2 times
+      for (let i=0; i<Math.floor(Math.random()*3); i++)
+        this.rotation += Math.PI * 2 / 3;
+
       this.pointingUp = pointingUp;
       this.fixed = (id==0) || id == ((NUMROWS-1)*(NUMROWS-1)) || id == ((NUMROWS*NUMROWS)-1) ? true : false ;
     }
@@ -36,6 +45,8 @@
       ctx.save();
       ctx.translate(this.cx, this.cy);
       ctx.rotate(this.rotation);
+
+      ctx.strokeStyle = "blue";
 
       // debug centre point of triangle
       //ctx.fillStyle = "red";
@@ -73,13 +84,20 @@
       }     
       ctx.stroke();
       ctx.restore();
+
+      // Green debug circle for triangle click area
+      // ctx.beginPath();
+      // ctx.arc(this.cx, this.cy, SIDE * 0.28, 0, Math.PI * 2);
+      // ctx.strokeStyle = "green";
+      // ctx.lineWidth =0.51;
+      // ctx.stroke();      
     }
 
 
     contains(x, y) {
       const dx = x - this.cx;
       const dy = y - this.cy;
-      return dx * dx + dy * dy < SIDE/3 * SIDE/3;
+      return dx * dx + dy * dy < SIDE * 0.28 * SIDE * 0.28;
     }
 
     rotate() {
@@ -89,7 +107,14 @@
     }
   }
 
-
+  // Generate array of dxs (x offsets) based on num rows
+  // const layout = [
+  //            [ 0],
+  //         [-1, 0, 1],
+  //      [-2,-1, 0, 1, 2],
+  //   [-3,-2,-1, 0, 1, 2, 3],
+  // ...
+  // ];
   function generateLayout(rows) {
     const layout = [];
     for (let r = 0; r < rows; r++) {
@@ -102,24 +127,12 @@
     return layout;
   }
 
-
   const triangles = [];
   const startX = canvas.width / 2;
-  const startY = 100;
+  const startY = 100;   //todo: make this dynamic
   let id = 0;
 
   const layout = generateLayout(NUMROWS);
-
-  // dynamically generate array based on num rows
-
-  // like this
-  // const layout = [
-    //   [0],
-    //   [-1, 0, 1],
-    //   [-2,-1, 0, 1, 2],
-    //   [-3,-2,-1, 0, 1, 2, 3],
-    // ...
-    // ];
 
   layout.forEach((row, rowIndex) => {
     const y = startY + rowIndex * HEIGHT;
@@ -130,15 +143,65 @@
     });
   });
 
+
+  // lookup table of triangles that belong to a hex (up to 5 rows)
+  const hextris = [
+    [1, 2, 3, 7, 6, 5],
+    [4, 5, 6, 12, 11, 10],
+    [6, 7, 8, 14, 13, 12],
+    [9, 10, 11, 19, 18, 17],
+    [11, 12, 13, 21, 20, 19],
+    [13, 14, 15, 23, 22, 21]
+  ]
+
+  const hexes = [];
+
+  for (let r = 0; r < layout.length - 1; r++) {
+    const row = layout[r];
+    for (let i = 1; i < row.length - 1; i+=2) {
+      const dx = row[i];
+      const x = startX + dx * SIDE * 0.5;
+      const y = startY + r * HEIGHT + HEIGHT / 2 - HEIGHT / 6;
+      hexes.push({tris: hextris[hexes.length], x, y, row: r, dx });
+    }
+  }
+
+  function rotateHexAtGrid(hex) {
+    let first = triangles[hex.tris[0]].rotation;
+    for (let i=0; i<hex.tris.length-1; i++) {
+      triangles[hex.tris[i]].rotation = triangles[hex.tris[i+1]].rotation + Math.PI * 2 / 3;
+    }
+    triangles[hex.tris[5]].rotation = first + Math.PI * 2 / 3;
+  }
+
   function drawAll() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);   
     triangles.forEach(tri => tri.draw(ctx));
+
+    // Red debug circle for hex click zone
+    // hexes.forEach(hex => {
+    //   ctx.beginPath();
+    //   ctx.arc(hex.x, hex.y, SIDE * 0.3, 0, Math.PI * 2);
+    //   ctx.strokeStyle = "red";
+    //   ctx.lineWidth = 0.5;
+    //   ctx.stroke();
+    // });    
   }
 
   canvas.addEventListener("click", e => {
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
+
+    for (const hex of hexes) {
+      const dx = x - hex.x;
+      const dy = y - hex.y;
+      if (dx * dx + dy * dy < (SIDE * 0.3) ** 2) {
+        rotateHexAtGrid(hex);
+        drawAll();
+        return;
+      }
+    }
 
     for (const tri of triangles) {
       if (tri.contains(x, y)) {
