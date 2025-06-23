@@ -29,6 +29,13 @@
   const ctx = canvas.getContext("2d");
   const debugging = false; 
 
+  const NUMROWS = 4;
+  if (NUMROWS < 4 || NUMROWS > 5 )
+    throw new Error("There can only be 4 or 5 rows");
+
+  let SIDE, HEIGHT, startX, startY;
+
+
   class Triangle {
     constructor(id, cx, cy, pointingUp = true) {
       this.id = id;
@@ -95,7 +102,7 @@
         ctx.beginPath();
         ctx.arc(this.cx, this.cy, SIDE * 0.28, 0, Math.PI * 2);
         ctx.strokeStyle = "green";
-        ctx.lineWidth =0.51;
+        ctx.lineWidth = 0.5;
         ctx.stroke();      
       }
     }
@@ -169,6 +176,11 @@
       if (dx * dx + dy * dy < (SIDE * 0.3) ** 2) {
         rotateHexAtGrid(hex);
         drawAll();
+        ctx.beginPath();
+        ctx.arc(hex.x, hex.y, SIDE*.867, 0, Math.PI * 2);
+        ctx.strokeStyle = "red";
+        ctx.lineWidth = 0.5;
+        ctx.stroke();      
         return;
       }
     }
@@ -177,6 +189,11 @@
       if (tri.contains(x, y)) {
         tri.rotate();
         drawAll();
+        ctx.beginPath();
+        ctx.arc(tri.cx, tri.cy, SIDE*0.29, 0, Math.PI * 2);
+        ctx.strokeStyle = "green";
+        ctx.lineWidth = 0.5;
+        ctx.stroke();      
         break;
       }
     }
@@ -185,8 +202,14 @@
   function initCanvas() {   
     const dpr = window.devicePixelRatio || 1;
 
-    // Make it a square using the smaller of width or height
+    // Calculate sizes in CSS pixels
     const cssSize = Math.min(window.innerWidth, window.innerHeight);
+    SIDE = cssSize / NUMROWS;
+    HEIGHT = SIDE * Math.sqrt(3) / 2;
+
+    startX = cssSize / 2;
+    startY = (2 * HEIGHT) / 3;
+
 
     // Set CSS display size
     canvas.style.width = `${cssSize}px`;
@@ -210,16 +233,12 @@
 
   initCanvas();
 
-  const NUMROWS = 4;
-  if (NUMROWS < 4 || NUMROWS > 5 )
-    throw new Error("There can only be 4 or 5 rows");
-
-  const SIDE = canvas.width / NUMROWS;
-  const HEIGHT = SIDE * Math.sqrt(3) / 2;
+  //const SIDE = canvas.width / NUMROWS;
+  //const HEIGHT = SIDE * Math.sqrt(3) / 2;
 
   const triangles = [];
-  const startX = canvas.width / 2;
-  const startY = 2*HEIGHT/3;
+  //const startX = canvas.width / 2;
+  //const startY = 2*HEIGHT/3;
   let id = 0;
 
   const layout = generateLayout(NUMROWS);
