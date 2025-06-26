@@ -30,12 +30,12 @@
 
     .title {
       font-family: 'Segoe UI', sans-serif;
-      font-size: 3vw;
+      font-size: 1vw;
       text-align: center;
       font-weight: 900;
       letter-spacing: 0.1em;
-      margin-top: 2vh;
-      margin-bottom: 1vh;
+      margin-top: 1vh;
+      margin-bottom: 0vh;
       background: linear-gradient(135deg, #ff69b4, #3399ff);
       background-clip: text;
       -webkit-background-clip: text;
@@ -51,56 +51,51 @@
       background: none;
     }    
 
-.instructions {
-  text-align: center;
-  font-family: sans-serif;
-  font-size: 1.2em;
-  padding: 0.5em;
-  color: #444;
-  max-width: 600px;
-  margin: 0 auto;
-}
+    .instructions {
+      text-align: center;
+      font-family: sans-serif;
+      font-size: 1.2em;
+      padding: 0.5em;
+      color: #444;
+      max-width: 600px;
+      margin: 0 auto;
+    }
 
-.game-controls {
-  text-align: center;
-  margin-bottom: 1vh;
-}
+    .game-controls {
+      text-align: center;
+      margin-bottom: 1vh;
+    }
 
-.win-message {
-  font-family: 'Segoe UI', sans-serif;
-  font-size: 1.5em;
-  color: green;
-  font-weight: bold;
-  margin-bottom: 0.5em;
-}
+    .win-message {
+      font-family: 'Segoe UI', sans-serif;
+      font-size: 1.5em;
+      color: green;
+      font-weight: bold;
+      margin-bottom: 0.5em;
+    }
 
-.reset-button {
-  font-size: 1em;
-  padding: 0.5em 1em;
-  background-color: #3399ff;
-  color: white;
-  border: none;
-  border-radius: 0.4em;
-  cursor: pointer;
-}
+    .reset-button {
+      font-size: 1em;
+      padding: 0.5em 0.5em;
+      background-color: #3399ff;
+      color: white;
+      border: none;
+      border-radius: 0.4em;
+      cursor: pointer;
+    }
 
-.reset-button:hover {
-  background-color: #2a7dd1;
-}    
+    .reset-button:hover {
+      background-color: #2a7dd1;
+    }    
   </style>
 </head>
 <body>
-  <div class="title">tri<span class="vi">VI</span></div>
+  <div class="instructions"><div class="title">tri<span class="vi">VI</span></div>Make a path from the top to a bottom corner.</div>
 
-<div class="instructions">
-  Rotate triangles to form a path from top corner to bottom corner.<br>
-  Tap a triangle to rotate it, or tap the center of a hex to rotate 6 at once.
-</div>
-
-<div class="game-controls">
-  <div id="win-message" class="win-message" hidden>You made a complete path — You win!</div>
-  <button id="reset-button" class="reset-button" onclick="reset()">Reset Game</button>
-</div>
+  <div class="game-controls">
+    <div id="win-message" class="win-message" >You made a complete path — You win!</div>
+    <button id="reset-button" class="reset-button" onclick="reset()">Reset Game</button>
+  </div>
 
  
   <div class="canvas-wrapper">
@@ -355,8 +350,6 @@
     pathFound = true;    
     while (pathFound) {
 
-      //console.log(path);
-
       pathFound = false;
       // loop all neighbour indexes
       for (let i=0; i<tri.neighbours.length; i++) {
@@ -374,23 +367,18 @@
             if (neighbour.isCorner ) {
               path.push(neighbour);
     
-              alert("You win!");
-              //console.log("You win!");              
-              //console.log(path);
+              showWinMessage();
               return;
             }
 
             // if a path exists to the neighbour 
             if (neighbour.pathExists(tri.id)) {
-              //console.log("Path exists!");
               path.push(neighbour);      
-              //path.push(neighbour.id);      
               // make current tri the neighbour            
               tri = neighbour;
               pathFound = true;
             }
             else {
-              //console.log("No path found.");
               return;
             }
           }
@@ -470,13 +458,20 @@
     ctx.scale(dpr, dpr);                // Scale drawing to match pixels
   }
 
-//  initCanvas();
+  function showWinMessage() {
+    document.getElementById("win-message").hidden = false;
+  }
+
+  function hideWinMessage() {
+    document.getElementById("win-message").hidden = true;
+  }
 
   const triangles = [];
   let layout = []
   const hexes = [];
 
   function reset() {
+    hideWinMessage();
     initCanvas();
     let id = 0;    
     triangles.length = 0;
