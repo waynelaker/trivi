@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Triangle Path Game</title>
+  <title>trivi</title>
   <style>
     html, body {
       margin: 0;
@@ -12,7 +12,7 @@
       touch-action: none;
     }
 
-    canvas {
+     canvas {
       display: block;
       width: 100vw;
       height: 100vw;     /* Make square */
@@ -50,10 +50,59 @@
       -webkit-text-fill-color: initial;
       background: none;
     }    
+
+.instructions {
+  text-align: center;
+  font-family: sans-serif;
+  font-size: 1.2em;
+  padding: 0.5em;
+  color: #444;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.game-controls {
+  text-align: center;
+  margin-bottom: 1vh;
+}
+
+.win-message {
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 1.5em;
+  color: green;
+  font-weight: bold;
+  margin-bottom: 0.5em;
+}
+
+.reset-button {
+  font-size: 1em;
+  padding: 0.5em 1em;
+  background-color: #3399ff;
+  color: white;
+  border: none;
+  border-radius: 0.4em;
+  cursor: pointer;
+}
+
+.reset-button:hover {
+  background-color: #2a7dd1;
+}    
   </style>
 </head>
 <body>
   <div class="title">tri<span class="vi">VI</span></div>
+
+<div class="instructions">
+  Rotate triangles to form a path from top corner to bottom corner.<br>
+  Tap a triangle to rotate it, or tap the center of a hex to rotate 6 at once.
+</div>
+
+<div class="game-controls">
+  <div id="win-message" class="win-message" hidden>You made a complete path — You win!</div>
+  <button id="reset-button" class="reset-button" onclick="reset()">Reset Game</button>
+</div>
+
+ 
   <div class="canvas-wrapper">
     <canvas id="game"></canvas>
   </div>
@@ -118,7 +167,7 @@
     [14, 7, null],
 
 
-    // todo: the rows below are different for 4 vs 5 rows - make it bett a better way!
+    // todo: the rows below are different for 4 vs 5 rows - find a better way!
 
     // row 3/3 (tris 9-15)
     // [null, null, 10],
@@ -242,8 +291,10 @@
       for (let i=0; i<this.neighbours.length; i++) {
         if(this.neighbours[i] == fromTri && this.rotation != i)  {
           console.log(this.id + ": I am connected to you " + fromTri + "!");
+          return true;          
         }
       }
+      return false;
     }
   }
 
@@ -289,7 +340,65 @@
         ctx.stroke();
       }); 
     }   
+
+    checkPath();
   }
+
+
+  function checkPath() {
+   
+    const path = [];    
+    
+    let tri = triangles[0]; // start from the top
+    path.push(tri);
+    
+    pathFound = true;    
+    while (pathFound) {
+
+      //console.log(path);
+
+      pathFound = false;
+      // loop all neighbour indexes
+      for (let i=0; i<tri.neighbours.length; i++) {
+        
+        // if the neighbour exists and current tri has a path to it (or tri is a corner)
+        if (tri.neighbours[i] != null && (i != tri.rotation || tri.isCorner)) {
+                    
+          // get neighbour object from index
+          neighbour = triangles[tri.neighbours[i]];
+          
+          // ignore neighbours already on path         
+          if (!path.includes(neighbour)) {
+    
+            // if the neighbour is a corner - yay
+            if (neighbour.isCorner ) {
+              path.push(neighbour);
+    
+              alert("You win!");
+              //console.log("You win!");              
+              //console.log(path);
+              return;
+            }
+
+            // if a path exists to the neighbour 
+            if (neighbour.pathExists(tri.id)) {
+              //console.log("Path exists!");
+              path.push(neighbour);      
+              //path.push(neighbour.id);      
+              // make current tri the neighbour            
+              tri = neighbour;
+              pathFound = true;
+            }
+            else {
+              //console.log("No path found.");
+              return;
+            }
+          }
+        }
+      }
+    }          
+  }
+  
 
   canvas.addEventListener("click", e => {
     const rect = canvas.getBoundingClientRect();
@@ -323,15 +432,10 @@
           ctx.stroke();      
         }
        
-        for (let i=0; i<tri.neighbours.length; i++) {
-          if (tri.neighbours[i] != null && (i != tri.rotation || tri.isCorner)) {
-            triangles[tri.neighbours[i]].pathExists(tri.id);            
-          }
-        }
-            
         break;
       }
     }
+
   });
 
   function initCanvas() {   
@@ -366,38 +470,42 @@
     ctx.scale(dpr, dpr);                // Scale drawing to match pixels
   }
 
-  initCanvas();
+//  initCanvas();
 
   const triangles = [];
-  let id = 0;
-
-  const layout = generateLayout(NUMROWS);
-
-  layout.forEach((row, rowIndex) => {
-    const y = startY + rowIndex * HEIGHT;
-    row.forEach((dx, i) => {
-      const x = startX + dx * SIDE * 0.5;
-      const pointingUp = (rowIndex + dx) % 2 === 0;
-      triangles.push(new Triangle(id++, x, y, pointingUp));
-    });
-  });
-
-
-
+  let layout = []
   const hexes = [];
 
-  for (let r = 0; r < layout.length - 1; r++) {
-    const row = layout[r];
-    for (let i = 1; i < row.length - 1; i+=2) {
-      const dx = row[i];
-      const x = startX + dx * SIDE * 0.5;
-      const y = startY + r * HEIGHT + HEIGHT / 2 - HEIGHT / 6;
-      hexes.push({tris: hextris[hexes.length], x, y, row: r, dx });
+  function reset() {
+    initCanvas();
+    let id = 0;    
+    triangles.length = 0;
+    layout = generateLayout(NUMROWS);    
+    layout.forEach((row, rowIndex) => {
+      const y = startY + rowIndex * HEIGHT;
+      row.forEach((dx, i) => {
+        const x = startX + dx * SIDE * 0.5;
+        const pointingUp = (rowIndex + dx) % 2 === 0;
+        triangles.push(new Triangle(id++, x, y, pointingUp));
+      });
+    });
+
+    hexes.length = 0;
+    for (let r = 0; r < layout.length - 1; r++) {
+      const row = layout[r];
+      for (let i = 1; i < row.length - 1; i+=2) {
+        const dx = row[i];
+        const x = startX + dx * SIDE * 0.5;
+        const y = startY + r * HEIGHT + HEIGHT / 2 - HEIGHT / 6;
+        hexes.push({tris: hextris[hexes.length], x, y, row: r, dx });
+      }
     }
+
+
+    drawAll();
   }
 
-  drawAll();
-  
+  reset();
 </script>
 </body>
 </html>
