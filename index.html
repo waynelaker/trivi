@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>trivi</title>
   <style>
     html, body {
@@ -27,15 +28,31 @@
       height: 100vh;
       width: 100vw;
     }    
+    .title .vi {
+      font-size: 0.5em;
+      vertical-align: super;
+      color: #ccc;
+      -webkit-text-fill-color: initial;
+      background: none;
+    }    
+
+    .overlay {
+      position: absolute;
+      top: 2vh;
+      left: 2vw;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1vh;
+      max-width: 40vw;
+    }
 
     .title {
       font-family: 'Segoe UI', sans-serif;
-      font-size: 1vw;
-      text-align: center;
+      font-size: clamp(1.5rem, 3vw, 3rem);
       font-weight: 900;
       letter-spacing: 0.1em;
-      margin-top: 1vh;
-      margin-bottom: 0vh;
       background: linear-gradient(135deg, #ff69b4, #3399ff);
       background-clip: text;
       -webkit-background-clip: text;
@@ -49,34 +66,23 @@
       color: #ccc;
       -webkit-text-fill-color: initial;
       background: none;
-    }    
-
-    .instructions {
-      text-align: center;
-      font-family: sans-serif;
-      font-size: 0.8em;
-      padding: 0.5em;
-      color: #444;
-      max-width: 600px;
-      margin: 0 auto;
     }
 
-    .game-controls {
-      text-align: center;
-      margin-bottom: 1vh;
+    .instructions {
+      font-family: sans-serif;
+      font-size: clamp(0.9rem, 1.8vw, 1.2rem);
+      color: #444;
     }
 
     .win-message {
-      font-family: 'Segoe UI', sans-serif;
-      font-size: 1.5em;
+      font-size: clamp(1rem, 2vw, 2rem);
       color: green;
       font-weight: bold;
-      margin-bottom: 0.5em;
     }
 
     .reset-button {
-      font-size: 0.8em;
-      padding: 0.5em 0.5em;
+      font-size: clamp(0.9rem, 1.6vw, 1.2rem);
+      padding: 0.6em 1em;
       background-color: #3399ff;
       color: white;
       border: none;
@@ -86,16 +92,21 @@
 
     .reset-button:hover {
       background-color: #2a7dd1;
-    }    
+    }
+
+
+
+
+   
   </style>
 </head>
 <body>
-  <div class="instructions"><div class="title">tri<span class="vi">VI</span></div>Make a path from the top to a bottom corner.</div>
-
-  <div class="game-controls">
-    <div id="win-message" class="win-message" >You made a complete path — You win!</div>
-    <button id="reset-button" class="reset-button" onclick="reset()">Reset Game</button>
-  </div>
+<div class="overlay">
+  <div class="title">tri<span class="vi">VI</span></div>
+  <div class="instructions">Make a path between two corners</div>
+  <div id="win-message" class="win-message">You made a complete path — You win!</div>
+  <button id="reset-button" class="reset-button" onclick="reset()">Reset Game</button>
+</div>
 
  
   <div class="canvas-wrapper">
@@ -336,15 +347,28 @@
       }); 
     }   
 
-    checkPath();
+    checkPaths();
+  }
+
+  function checkPaths() {
+
+    for (let tri of triangles) {
+      if (tri.isCorner) {
+        if (checkPath(tri)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 
 
-  function checkPath() {
+  function checkPath(tri) {
    
     const path = [];    
     
-    let tri = triangles[0]; // start from the top
+    //let tri = triangles[0]; // start from the top
     path.push(tri);
     
     pathFound = true;    
@@ -368,7 +392,7 @@
               path.push(neighbour);
     
               showWinMessage();
-              return;
+              return true;
             }
 
             // if a path exists to the neighbour 
@@ -379,12 +403,13 @@
               pathFound = true;
             }
             else {
-              return;
+              return false;
             }
           }
         }
       }
     }          
+    return false;    
   }
   
 
