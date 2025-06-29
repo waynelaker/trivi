@@ -241,6 +241,7 @@
       this.pointingUp = pointingUp;
       this.isCorner = (id==0) || id == ((NUMROWS-1)*(NUMROWS-1)) || id == ((NUMROWS*NUMROWS)-1) ? true : false ;
 
+      this.highlight = false;
       this.neighbours = neighbours[id];
     }
 
@@ -273,13 +274,29 @@
         ctx.fillStyle = "gray";
         ctx.fill();        
       }
+
+      // if (this.highlight) {
+      //   ctx.fillStyle = "green";
+      //   ctx.fill();        
+      // }
+      // if (this.highlight) {
+      //   ctx.fillStyle = "#ffff99"; // light yellow highlight
+      //   ctx.beginPath();
+      //   ctx.moveTo(0, tipY);
+      //   ctx.lineTo(-SIDE / 2, baseY);
+      //   ctx.lineTo(SIDE / 2, baseY);
+      //   ctx.closePath();
+      //   ctx.fill();
+      // }
+
      
       ctx.stroke();
 
       // curved path
       if (!this.isCorner) {
         ctx.beginPath();
-        ctx.strokeStyle = "blue";
+        //ctx.strokeStyle = "blue";
+        ctx.strokeStyle =  this.highlight ? "green" : "blue";
         ctx.lineWidth = 4;
         if (this.pointingUp) {
           ctx.arc(0, -HEIGHT*2/3, SIDE/2, Math.PI * 1/3, Math.PI * 2/3);
@@ -376,12 +393,10 @@
       }); 
     }   
 
-    if (gameFinished()) {
-       playing = false;
-    }
+
   }
 
-  function gameFinished() {
+  function checkWin() {
     for (let tri of triangles) {
       if (tri.isCorner) {
         if (checkPath(tri)) {
@@ -393,53 +408,43 @@
   }
 
 
-  function checkPath(tri) {
-   
-    const path = [];    
-    
-    //let tri = triangles[0]; // start from the top
-    path.push(tri);
-    
-    pathFound = true;    
-    while (pathFound) {
+function checkPath(tri) {
+  triangles.forEach(t => t.highlight = false);    
+  const path = [tri];    
 
-      pathFound = false;
-      // loop all neighbour indexes
-      for (let i=0; i<tri.neighbours.length; i++) {
-        
-        // if the neighbour exists and current tri has a path to it (or tri is a corner)
-        if (tri.neighbours[i] != null && (i != tri.rotation || tri.isCorner)) {
-                    
-          // get neighbour object from index
-          neighbour = triangles[tri.neighbours[i]];
-          
-          // ignore neighbours already on path         
-          if (!path.includes(neighbour)) {
-    
-            // if the neighbour is a corner - yay
-            if (neighbour.isCorner ) {
-              path.push(neighbour);
-    
-              showWinMessage();
-              return true;
-            }
+  let tempPath = [tri];
+  let pathFound = true;    
+  while (pathFound) {
+    pathFound = false;
 
-            // if a path exists to the neighbour 
-            if (neighbour.pathExists(tri.id)) {
-              path.push(neighbour);      
-              // make current tri the neighbour            
-              tri = neighbour;
-              pathFound = true;
-            }
-            else {
-              return false;
-            }
+    for (let i = 0; i < tri.neighbours.length; i++) {
+      if (tri.neighbours[i] != null && (i !== tri.rotation || tri.isCorner)) {
+        const neighbour = triangles[tri.neighbours[i]];
+        if (!tempPath.includes(neighbour)) {
+          if (neighbour.isCorner) {
+            tempPath.push(neighbour);
+            // ✅ Only now apply highlight
+            tempPath.forEach(t => t.highlight = true);
+            showWinMessage();
+            return true;
+          }
+
+          if (neighbour.pathExists(tri.id)) {
+            tempPath.push(neighbour);
+            tri = neighbour;
+            pathFound = true;
+            break; // important: go back to top of loop with new tri
+          } else {
+            return false;
           }
         }
       }
-    }          
-    return false;    
+    }
   }
+
+  return false;
+}
+
   
 
   canvas.addEventListener("click", e => {
@@ -463,6 +468,13 @@
         ctx.strokeStyle = "red";
         ctx.lineWidth = 0.5;
         ctx.stroke();      
+
+        // 🟢 Check for win here too
+        if (checkWin()) {
+          playing = false;
+          drawAll();  // draw highlighted path
+        }
+
         return;
       }
     }
@@ -478,10 +490,15 @@
           ctx.lineWidth = 0.5;
           ctx.stroke();      
         }
-       
+        if (checkWin()) {
+          playing = false;
+          drawAll();
+        }         
         break;
       }
     }
+
+  
 
   });
 
@@ -567,6 +584,7 @@
   }
 
   reset();
+  checkWin();
 </script>
 </body>
 </html>
