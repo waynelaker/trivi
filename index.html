@@ -235,8 +235,8 @@
       this.rotation = 0;
 
       // randomly rotate 0, 1 or 2 times
-      for (let i=0; i<Math.floor(Math.random()*3); i++)
-        this.rotation = (this.rotation + 1 ) % 3;
+      //for (let i=0; i<Math.floor(Math.random()*3); i++)
+      //  this.rotation = (this.rotation + 1 ) % 3;
 
       this.pointingUp = pointingUp;
       this.isCorner = (id==0) || id == ((NUMROWS-1)*(NUMROWS-1)) || id == ((NUMROWS*NUMROWS)-1) ? true : false ;
@@ -264,6 +264,7 @@
       const tipY = this.pointingUp ? -2 * h / 3 : 2 * h / 3;
       const baseY = this.pointingUp ? h / 3 : -h / 3;
 
+
       ctx.beginPath();
       ctx.moveTo(0, tipY);
       ctx.lineTo(-SIDE / 2, baseY);
@@ -271,23 +272,9 @@
       ctx.closePath();
       
       if (this.isCorner) {
-        ctx.fillStyle = "gray";
+        ctx.fillStyle = this.highlight ? "green" : "gray";      
         ctx.fill();        
       }
-
-      // if (this.highlight) {
-      //   ctx.fillStyle = "green";
-      //   ctx.fill();        
-      // }
-      // if (this.highlight) {
-      //   ctx.fillStyle = "#ffff99"; // light yellow highlight
-      //   ctx.beginPath();
-      //   ctx.moveTo(0, tipY);
-      //   ctx.lineTo(-SIDE / 2, baseY);
-      //   ctx.lineTo(SIDE / 2, baseY);
-      //   ctx.closePath();
-      //   ctx.fill();
-      // }
 
      
       ctx.stroke();
@@ -295,7 +282,6 @@
       // curved path
       if (!this.isCorner) {
         ctx.beginPath();
-        //ctx.strokeStyle = "blue";
         ctx.strokeStyle =  this.highlight ? "green" : "blue";
         ctx.lineWidth = 4;
         if (this.pointingUp) {
@@ -425,6 +411,7 @@ function checkPath(tri) {
             tempPath.push(neighbour);
             // ✅ Only now apply highlight
             tempPath.forEach(t => t.highlight = true);
+            console.log(tempPath);
             showWinMessage();
             return true;
           }
@@ -546,6 +533,76 @@ function checkPath(tri) {
   let layout = []
   const hexes = [];
 
+  function xmur3(str) {
+    let h = 1779033703 ^ str.length;
+    for (let i = 0; i < str.length; i++) {
+      h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+      h = (h << 13) | (h >>> 19);
+    }
+    return () => {
+      h = Math.imul(h ^ (h >>> 16), 2246822507);
+      h = Math.imul(h ^ (h >>> 13), 3266489909);
+      return (h ^= h >>> 16) >>> 0;
+    };
+  }  
+
+  function mulberry32(seed) {
+    return function() {
+      var t = seed += 0x6D2B79F5;
+      t = Math.imul(t ^ t >>> 15, t | 1);
+      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  function getQueryParam(name) {
+    const params = new URLSearchParams(window.location.search);
+    return params.get(name);
+  }
+
+  function updateUrlWithSeed(seed) {
+    const url = new URL(window.location);
+    url.searchParams.set("game", seed);
+    window.history.replaceState({}, "", url); // avoid reload
+  }  
+
+  function getDailySeed() {
+    const today = new Date();
+    const y = today.getUTCFullYear();
+    const m = today.getUTCMonth();
+    const d = today.getUTCDate();
+    return y * 10000 + (m + 1) * 100 + d;
+  }
+
+
+  function getOrGenerateSeed() {
+    let seedParam = getQueryParam("game");
+
+    if (seedParam) {
+      return parseInt(seedParam, 10);
+    }
+
+    // Generate seed from today
+    const today = new Date().toISOString().slice(0, 10); // e.g., "2025-06-30"
+    const salt = "YouAreVerySneaky";
+    const seed = xmur3(salt + today)();
+
+    // Push it into the URL
+    updateUrlWithSeed(seed);
+    return seed;
+  }  
+
+  function loadDailyTrianglePattern() {
+    const seed = getOrGenerateSeed();
+    const rand = mulberry32(seed);
+
+    for (const tri of triangles) {
+      if (!tri.isCorner) {
+        tri.rotation = Math.floor(rand() * 3);
+      }
+    }
+  }
+
   function reset() {
     hideWinMessage();
     initCanvas();
@@ -568,6 +625,8 @@ function checkPath(tri) {
       });
     });
 
+    loadDailyTrianglePattern();    
+
     hexes.length = 0;
     for (let r = 0; r < layout.length - 1; r++) {
       const row = layout[r];
@@ -578,7 +637,6 @@ function checkPath(tri) {
         hexes.push({tris: hextris[hexes.length], x, y, row: r, dx });
       }
     }
-
 
     drawAll();
   }
