@@ -113,9 +113,9 @@
 <body>
 <div class="overlay">
   <div class="title">tri<span class="vi">VI</span></div>
-  <div class="instructions">Make a path between two corners</div>
-  <div id="scoreboard" class="scoreboard">Score: 100</div>
-  <div id="win-message" class="win-message">You made a complete path — You win!</div>
+  <div class="instructions">Make a path between two corners.</div>
+  <div id="scoreboard" class="scoreboard">Current Score: 100</div>
+  <div id="win-message" class="win-message">You made a complete path!</div>
   <button id="reset-button" class="reset-button" onclick="reset()">Reset Game</button>
 </div>
 
@@ -132,7 +132,12 @@
   let playing = true;
 
   function updateScoreboard() {
-    document.getElementById("scoreboard").textContent = `Score: ${score}`;
+    if (playing) {
+      document.getElementById("scoreboard").textContent = `Current Score: ${score}`;    
+    }
+    else {
+      document.getElementById("scoreboard").textContent = `Final Score: ${score}`;
+    }
   }
 
 
@@ -316,15 +321,14 @@
         this.rotation = (this.rotation + 1) % 3;
         triangleRotations++;
         score = Math.max(0, score - 10);
-        updateScoreboard();
       }
     }
 
+    
 
     pathExists(fromTri) {
       for (let i=0; i<this.neighbours.length; i++) {
-        if(this.neighbours[i] == fromTri && this.rotation != i)  {
-          console.log(this.id + ": I am connected to you " + fromTri + "!");
+        if(this.neighbours[i] == fromTri && this.rotation != i)  {          
           return true;          
         }
       }
@@ -361,7 +365,6 @@
 
     hexRotations++;
     score = Math.max(0, score - 1);
-    updateScoreboard();    
   }
 
   function drawAll() {
@@ -379,6 +382,7 @@
       }); 
     }   
 
+    updateScoreboard();        
 
   }
 
@@ -411,7 +415,6 @@ function checkPath(tri) {
             tempPath.push(neighbour);
             // ✅ Only now apply highlight
             tempPath.forEach(t => t.highlight = true);
-            console.log(tempPath);
             showWinMessage();
             return true;
           }
@@ -508,14 +511,6 @@ function checkPath(tri) {
     canvas.width = cssSize * dpr;
     canvas.height = cssSize * dpr;
 
-    if (debugging) {    
-      console.log("dpr:", dpr);
-      console.log("cssSize:", cssSize);
-      console.log("canvas.style.width:", canvas.style.width);
-      console.log("canvas.style.height:", canvas.style.height);
-      console.log("canvas.width:", canvas.width);
-      console.log("canvas.height:", canvas.height);  
-    }
     // Set transform so 1 unit in code = 1 CSS pixel
     ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset
     ctx.scale(dpr, dpr);                // Scale drawing to match pixels
@@ -611,7 +606,6 @@ function checkPath(tri) {
     score = 100;
     triangleRotations = 0;
     hexRotations = 0;
-    updateScoreboard();
 
     let id = 0;    
     triangles.length = 0;
