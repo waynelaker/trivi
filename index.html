@@ -569,6 +569,13 @@ function checkPath(tri) {
     return y * 10000 + (m + 1) * 100 + d;
   }
 
+  function getLocalDateString() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = (now.getMonth() + 1).toString().padStart(2, '0');
+    const day = now.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
 
   function getOrGenerateSeed() {
     let seedParam = getQueryParam("game");
@@ -578,7 +585,9 @@ function checkPath(tri) {
     }
 
     // Generate seed from today
-    const today = new Date().toISOString().slice(0, 10); // e.g., "2025-06-30"
+    //const today = new Date().toISOString().slice(0, 10); // e.g., "2025-06-30"
+    const today = getLocalDateString()
+    console.log(today);
     const salt = "YouAreVerySneaky";
     const seed = xmur3(salt + today)();
 
