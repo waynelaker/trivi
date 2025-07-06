@@ -34,16 +34,33 @@
       width: 100vw;
     }    
 
-    .overlay {
+    .overlay-container {
       position: absolute;
       top: 2vh;
-      left: 2vw;
+      left: 0;
+      right: 0;
       z-index: 10;
       display: flex;
+      justify-content: space-between;
+      padding: 0 2vw;
+      pointer-events: none; /* allows clicks to pass through, but keep buttons interactive with override */
+    }
+
+    .overlay {
+      display: flex;
       flex-direction: column;
-      align-items: flex-start;
       gap: 1vh;
       max-width: 40vw;
+      pointer-events: auto; /* makes the buttons clickable */
+    }
+
+    .left-overlay {
+      align-items: flex-start;
+    }
+
+    .right-overlay {
+      align-items: flex-end;
+      text-align: right;
     }
 
     .title {
@@ -64,6 +81,14 @@
       color: #ccc;
       -webkit-text-fill-color: initial;
       background: none;
+    }
+
+    .date {
+      font-family: 'Segoe UI', sans-serif;
+      font-size: clamp(1rem, 2vw, 3rem);
+      font-weight: 600;
+      letter-spacing: 0.1em;      
+      color: #444;
     }
 
     .instructions {
@@ -109,19 +134,24 @@
   </style>
 </head>
 <body>
-<div class="overlay">
-  <div class="title">tri<span class="vi">VI</span> </div>
-    <div class="instructions"><span id="today"></span> - Make a path between two corners.</div>
-  <div id="scoreboard" class="scoreboard">Current Score: 100</div>
-  <button id="reset-button" class="button" onclick="reset()">Reset Game</button>
-  <div id="win-message" class="win-message">You made a complete path!</div>
-  <button id="replay-button" class="button" onclick="replay()">Instant Replay</button>
-</div>
-
- 
-  <div class="canvas-wrapper">
-    <canvas id="game"></canvas>
+<div class="overlay-container">
+  <div class="overlay left-overlay">
+    <div class="title">tri<span class="vi">VI</span></div>
+    <div class="instructions">Make a path between two corners.</div>
+    <div id="scoreboard" class="scoreboard">Current Score: 100</div>
+    <button id="reset-button" class="button" onclick="reset()">Reset Game</button>
+    <div id="win-message" class="win-message">You made a complete path!</div>
+    <button id="replay-button" class="button" onclick="replay()">Instant Replay</button>
   </div>
+
+  <div class="overlay right-overlay">
+    <div class="date" id="today"></div>    
+  </div>
+</div>
+ 
+<div class="canvas-wrapper">
+  <canvas id="game"></canvas>
+</div>
 
 <script>
 
@@ -561,10 +591,14 @@ function triClick(tri) {
 
   function getLocalDateString() {
     const now = new Date();
-    const year = now.getFullYear();
-    const month = (now.getMonth() + 1).toString().padStart(2, '0');
-    const day = now.getDate().toString().padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    const options = {
+      day: 'numeric',      // "d" (e.g., "7")
+      month: 'short',      // "mmm" (e.g., "Jul")
+      year: 'numeric'      // "yyyy" (e.g., "2025")
+    }
+
+    const formattedDate = now.toLocaleDateString('en-GB', options);
+    return formattedDate;
   }
 
   function getOrGenerateSeed() {
