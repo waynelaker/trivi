@@ -603,19 +603,17 @@ function triClick(tri) {
     gameState = GameState.REPLAYING;
     for (let move of moves) {
    
-      await sleep(1000); // 1-second delay between each move
+      await sleep(500); // delay between each move
 
       if (gameState != GameState.REPLAYING) {
         return;
       }
 
       if (move.type === "tri") {
-        triangles[move.id].rotate();
+        triClick(triangles[move.id]);
       } else if (move.type === "hex") {
-        rotateHexAtGrid({ tris: hextris[move.id] });
+        hexClick(hexes[move.id]);
       }
-
-      drawAll();
     }
 
     gameState = GameState.ACTIVE;
