@@ -80,7 +80,7 @@
       font-weight: bold;
     }
 
-    .reset-button {
+    .button {
       font-size: clamp(0.9rem, 1.6vw, 1.2rem);
       padding: 0.6em 1em;
       background-color: #3399ff;
@@ -112,11 +112,12 @@
 </head>
 <body>
 <div class="overlay">
-  <div class="title">tri<span class="vi">VI</span></div>
+  <div class="title">tri<span class="vi">VI</span> <span class="instructions" id="today"></span></div>
   <div class="instructions">Make a path between two corners.</div>
   <div id="scoreboard" class="scoreboard">Current Score: 100</div>
+  <button id="reset-button" class="button" onclick="reset()">Reset Game</button>
   <div id="win-message" class="win-message">You made a complete path!</div>
-  <button id="reset-button" class="reset-button" onclick="reset()">Reset Game</button>
+  <button id="replay-button" class="button" onclick="replay()">Instant Replay</button>
 </div>
 
  
@@ -126,13 +127,20 @@
 
 <script>
 
+  const GameState = {
+    ACTIVE: 'active',
+    INACTIVE: 'inactive',
+    REPLAY_INIT: 'replay_init',
+    REPLAYING: 'replaying'    
+};
+
   let score = 100;
   let triangleRotations = 0;
   let hexRotations = 0;
-  let playing = true;
+  let gameState = GameState.ACTIVE;
 
   function updateScoreboard() {
-    if (playing) {
+    if (gameState != GameState.INACTIVE) {
       document.getElementById("scoreboard").textContent = `Current Score: ${score}`;    
     }
     else {
@@ -146,12 +154,9 @@
   const debugging = false; 
 
   const NUMROWS = 5;
-  if (NUMROWS < 4 || NUMROWS > 5 )
-    throw new Error("There can only be 4 or 5 rows");
-
   let SIDE, HEIGHT, startX, startY;
 
-  // lookup table of triangles that belong to a hex (up to 5 rows)
+  // lookup table of triangles that belong to a hex
   const hextris = [
     [1, 2, 3, 7, 6, 5],
     [4, 5, 6, 12, 11, 10],
@@ -198,18 +203,6 @@
     [3, 8, 6],
     [14, 7, null],
 
-
-    // todo: the rows below are different for 4 vs 5 rows - find a better way!
-
-    // row 3/3 (tris 9-15)
-    // [null, null, 10],
-    // [4, 11, 9],    
-    // [null, 10, 12],
-    // [6, 13, 11],
-    // [null, 12, 14],
-    // [8, 15, 13],
-    // [null, 14, null],                            
-
     // row 3/4 (tris 9-15)
     [17, null, 10],
     [4, 11, 9],    
@@ -238,10 +231,6 @@
       this.cx = cx;
       this.cy = pointingUp ? cy : cy - HEIGHT / 3;
       this.rotation = 0;
-
-      // randomly rotate 0, 1 or 2 times
-      //for (let i=0; i<Math.floor(Math.random()*3); i++)
-      //  this.rotation = (this.rotation + 1 ) % 3;
 
       this.pointingUp = pointingUp;
       this.isCorner = (id==0) || id == ((NUMROWS-1)*(NUMROWS-1)) || id == ((NUMROWS*NUMROWS)-1) ? true : false ;
@@ -280,7 +269,6 @@
         ctx.fillStyle = this.highlight ? "green" : "gray";      
         ctx.fill();        
       }
-
      
       ctx.stroke();
 
@@ -390,11 +378,11 @@
     for (let tri of triangles) {
       if (tri.isCorner) {
         if (checkPath(tri)) {
-          return true;
+          gameState = GameState.INACTIVE;
+          drawAll();  
         }
       }
     }
-    return false;
   }
 
 
@@ -436,10 +424,48 @@ function checkPath(tri) {
 }
 
   
+function hexClick(hex) {
+
+  if (gameState != GameState.REPLAYING) {
+    moves.push({
+      "type":"hex",
+      "id":hex.id
+    });
+  }
+
+  rotateHexAtGrid(hex);
+  drawAll();
+  ctx.beginPath();
+  ctx.arc(hex.x, hex.y, SIDE * 0.3, 0, Math.PI * 2);
+  ctx.strokeStyle = "red";
+  ctx.lineWidth = 0.5;
+  ctx.stroke();      
+}
+
+
+function triClick(tri) {
+
+  if (!tri.isCorner) {
+    if (gameState != GameState.REPLAYING) {    
+      moves.push({
+        "type":"tri",
+        "id":tri.id
+      });
+    }
+
+    tri.rotate();
+    drawAll();
+    ctx.beginPath();
+    ctx.arc(tri.cx, tri.cy, SIDE * 0.28, 0, Math.PI * 2);
+    ctx.strokeStyle = "green";
+    ctx.lineWidth = 0.5;
+    ctx.stroke();      
+  }
+}
 
   canvas.addEventListener("click", e => {
 
-    if (!playing) {
+    if (gameState != GameState.ACTIVE) {
       return;
     }
 
@@ -451,44 +477,19 @@ function checkPath(tri) {
       const dx = x - hex.x;
       const dy = y - hex.y;
       if (dx * dx + dy * dy < (SIDE * 0.3) ** 2) {
-        rotateHexAtGrid(hex);
-        drawAll();
-        ctx.beginPath();
-        ctx.arc(hex.x, hex.y, SIDE * 0.3, 0, Math.PI * 2);
-        ctx.strokeStyle = "red";
-        ctx.lineWidth = 0.5;
-        ctx.stroke();      
-
-        // 🟢 Check for win here too
-        if (checkWin()) {
-          playing = false;
-          drawAll();  // draw highlighted path
-        }
-
-        return;
+        hexClick(hex);
+        break;
       }
     }
 
     for (const tri of triangles) {
       if (tri.contains(x, y)) {
-        tri.rotate();
-        drawAll();
-        if (!tri.isCorner) {
-          ctx.beginPath();
-          ctx.arc(tri.cx, tri.cy, SIDE * 0.28, 0, Math.PI * 2);
-          ctx.strokeStyle = "green";
-          ctx.lineWidth = 0.5;
-          ctx.stroke();      
-        }
-        if (checkWin()) {
-          playing = false;
-          drawAll();
-        }         
+        triClick(tri);
         break;
       }
     }
 
-  
+    checkWin();
 
   });
 
@@ -518,12 +519,17 @@ function checkPath(tri) {
 
   function showWinMessage() {
     document.getElementById("win-message").hidden = false;
+    document.getElementById("replay-button").hidden = false;    
   }
 
   function hideWinMessage() {
     document.getElementById("win-message").hidden = true;
+    document.getElementById("replay-button").hidden = true;        
   }
 
+  
+
+  const moves = [];
   const triangles = [];
   let layout = []
   const hexes = [];
@@ -555,20 +561,6 @@ function checkPath(tri) {
     return params.get(name);
   }
 
-  function updateUrlWithSeed(seed) {
-    const url = new URL(window.location);
-    url.searchParams.set("game", seed);
-    window.history.replaceState({}, "", url); // avoid reload
-  }  
-
-  function getDailySeed() {
-    const today = new Date();
-    const y = today.getUTCFullYear();
-    const m = today.getUTCMonth();
-    const d = today.getUTCDate();
-    return y * 10000 + (m + 1) * 100 + d;
-  }
-
   function getLocalDateString() {
     const now = new Date();
     const year = now.getFullYear();
@@ -584,15 +576,10 @@ function checkPath(tri) {
       return parseInt(seedParam, 10);
     }
 
-    // Generate seed from today
-    //const today = new Date().toISOString().slice(0, 10); // e.g., "2025-06-30"
     const today = getLocalDateString()
-    console.log(today);
+    document.getElementById("today").textContent = today;
     const salt = "YouAreVerySneaky";
     const seed = xmur3(salt + today)();
-
-    // Push it into the URL
-   // updateUrlWithSeed(seed);
     return seed;
   }  
 
@@ -606,12 +593,52 @@ function checkPath(tri) {
       }
     }
   }
+  
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  async function replay() {
+    gameState = GameState.REPLAY_INIT;
+    reset(); // Clear board before replay
+
+    gameState = GameState.REPLAYING;
+    for (let move of moves) {
+   
+      await sleep(1000); // 1-second delay between each move
+
+      if (gameState != GameState.REPLAYING) {
+        return;
+      }
+
+      if (move.type === "tri") {
+        triangles[move.id].rotate();
+      } else if (move.type === "hex") {
+        rotateHexAtGrid({ tris: hextris[move.id] });
+      }
+
+      drawAll();
+    }
+
+    gameState = GameState.ACTIVE;
+    checkWin();
+  }
+
 
   function reset() {
+
+    if (gameState == GameState.REPLAYING) {
+      gameState = GameState.INACTIVE;
+    }
+
     hideWinMessage();
     initCanvas();
 
-    playing = true;
+    if (gameState != GameState.REPLAY_INIT) {
+      moves.length = 0;  
+      gameState = GameState.ACTIVE;
+   }
+
     score = 100;
     triangleRotations = 0;
     hexRotations = 0;
@@ -637,7 +664,7 @@ function checkPath(tri) {
         const dx = row[i];
         const x = startX + dx * SIDE * 0.5;
         const y = startY + r * HEIGHT + HEIGHT / 2 - HEIGHT / 6;
-        hexes.push({tris: hextris[hexes.length], x, y, row: r, dx });
+        hexes.push({id:hexes.length, tris: hextris[hexes.length], x, y, row: r, dx });
       }
     }
 
